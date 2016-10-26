@@ -25,12 +25,14 @@
 
         {% endfor %}
     </ul>
-{% endif %}
-
-{% if pagination %}
+    {% if pagination %}
     <div class="pagination">
         {{ macros.pagination_widget(pagination, '.index') }}
     </div>
 {% endif %}
+
+{% endif %}
+
+
 
 {% endblock %}
