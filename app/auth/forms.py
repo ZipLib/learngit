@@ -6,17 +6,25 @@ from ..models import User
 
 
 class LoginForm(Form):
-    email = StringField('Email', validators=[DataRequired(), Length(1, 64),
+    '''email = StringField('Email', validators=[DataRequired(), Length(1, 64),
                                              Email()])
+    '''
+    medcard = StringField('Medcard', validators=[DataRequired(), Length(8, 8),
+                                                 Regexp('[0-9]', 0, 'medcard must be numbers')])
     password = PasswordField('Password', validators=[DataRequired()])
     remember_me = BooleanField('Keep me logged in')
     submit = SubmitField('Log In')
 
 
 class RegistrationForm(Form):
-    email = StringField('Email', validators=[DataRequired(), Length(1, 64),
+    '''email = StringField('Email', validators=[DataRequired(), Length(1, 64),
                                            Email()])
-    username = StringField('Username', validators=[
+    '''
+    idcard = StringField('Idcard', validators=[DataRequired(), Length(18, 18),
+                                               Regexp('[0-9]', 0, 'idcard must be numbers')])
+    address = StringField('Address', validators=[DataRequired(), Length(1,100),
+                                                 Regexp('[A-Za-z]', 0, 'address must only have char')])
+    name = StringField('Name', validators=[
         DataRequired(), Length(1, 64), Regexp('^[A-Za-z][A-Za-z0-9_.]*$', 0,
                                           'Usernames must have only letters, '
                                           'numbers, dots or underscores')])

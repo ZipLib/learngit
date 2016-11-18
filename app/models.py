@@ -6,11 +6,15 @@ from . import db, login_manager
 
 
 class Permission:
-    FOLLOW = 0x01
+    '''FOLLOW = 0x01
     COMMENT = 0x02
     WRITE_ARTICLES = 0x04
-    MODERATE_COMMENTS = 0x08
+    MODERATE_COMMENTS = 0x08'''
+    SEEDOCTOR = 0x01
+    REGISTRAR = 0x02
+    SEEPATIENT = 0x04
     ADMINISTER = 0x80
+
 
 
 class Role(db.Model):
@@ -24,13 +28,11 @@ class Role(db.Model):
     @staticmethod
     def insert_roles():
         roles = {
-            'User': (Permission.FOLLOW |
-                     Permission.COMMENT |
-                     Permission.WRITE_ARTICLES, True),
-            'Moderator': (Permission.FOLLOW |
-                          Permission.COMMENT |
-                          Permission.WRITE_ARTICLES |
-                          Permission.MODERATE_COMMENTS, False),
+            'Patient': (Permission.SEEDOCTOR , True),
+            'Registrar': (Permission.SEEDOCTOR |
+                          Permission.REGISTRAR , False),
+            'Doctor': (Permission.SEEDOCTOR |
+                       Permission.SEEPATIENT, False),
             'Administrator': (0xff, False)
         }
         for r in roles:
@@ -49,16 +51,19 @@ class Role(db.Model):
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(64), unique=True, index=True)
-    username = db.Column(db.String(64), unique=True, index=True)
+    #email = db.Column(db.String(64), unique=True, index=True)
+    medcard = db.Column(db.String(64), unique=True, index=True)
+    idcard = db.Column(db.String(64), unique=True, index=True)
+    address = db.Column(db.String(256))
+    name = db.Column(db.String(64), index=True)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     password_hash = db.Column(db.String(128))
-    confirmed = db.Column(db.Boolean, default=False)
+    #confirmed = db.Column(db.Boolean, default=False)
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
         if self.role is None:
-            if self.email == current_app.config['FLASKY_ADMIN']:
+            if self.idcard == current_app.config['FLASKY_ADMIN']:
                 self.role = Role.query.filter_by(permissions=0xff).first()
             if self.role is None:
                 self.role = Role.query.filter_by(default=True).first()
@@ -66,20 +71,31 @@ class User(UserMixin, db.Model):
     @staticmethod
     def generate_fake(count=100):
         from sqlalchemy.exc import IntegrityError
-        from random import seed
+        from random import seed, randint
         import forgery_py
 
         seed()
         for i in range(count):
-            u = User(email=forgery_py.internet.email_address(),
-                     username=forgery_py.internet.user_name(True),
+            u = User(idcard=User.fakeCard(),
+                     medcard=User.fakeCard(8),
+                     address=forgery_py.address.street_address(),
+                     name=forgery_py.internet.user_name(True),
                      password=forgery_py.lorem_ipsum.word(),
-                     confirmed=True)
+                     )
             db.session.add(u)
             try:
                 db.session.commit()
             except IntegrityError:
                 db.session.rollback()
+
+    @staticmethod
+    def fakeCard(length=18):
+        import random
+        card=''
+        chars='1234567890'
+        for i in range(length):
+            card += random.choice(chars)
+        return card
 
     @property
     def password(self):
@@ -92,9 +108,11 @@ class User(UserMixin, db.Model):
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    '''
     def generate_confirmation_token(self, expiration=3600):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)
         return s.dumps({'confirm': self.id})
+
 
     def confirm(self, token):
         s = Serializer(current_app.config['SECRET_KEY'])
@@ -111,7 +129,8 @@ class User(UserMixin, db.Model):
     def generate_reset_token(self, expiration=3600):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)
         return s.dumps({'reset': self.id})
-
+    '''
+    #TODO
     def reset_password(self, token, new_password):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
@@ -124,6 +143,7 @@ class User(UserMixin, db.Model):
         db.session.add(self)
         return True
 
+    '''
     def generate_email_change_token(self, new_email, expiration=3600):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)
         return s.dumps({'change_email': self.id, 'new_email': new_email})
@@ -144,6 +164,7 @@ class User(UserMixin, db.Model):
         self.email = new_email
         db.session.add(self)
         return True
+    '''
 
     def can(self, permissions):
         return self.role is not None and \
@@ -151,6 +172,11 @@ class User(UserMixin, db.Model):
 
     def is_administrator(self):
         return self.can(Permission.ADMINISTER)
+
+    def is_staff(self):
+        return self.can(Permission.SEEPATIENT)or\
+               self.can(Permission.ADMINISTER)or\
+               self.can(Permission.REGISTRAR)
 
     def __repr__(self):
         return '<User %r>' % self.username

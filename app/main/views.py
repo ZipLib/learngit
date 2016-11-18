@@ -5,7 +5,7 @@ from . import main
 from .. import db
 from ..models import Permission, Role, User
 from ..decorators import admin_required, permission_required
-
+from flask import jsonify
 
 @main.route('/')
 def index():
@@ -16,12 +16,11 @@ def index():
     users = pagination.items
     return render_template('index.html', users=users, pagination=pagination)
 
-    return render_template('index.html')
-
-@main.route('/deleteuser/<int:id>')
+@main.route('/deleteuser', methods = ['POST'])
 @login_required
 @admin_required
-def delete_user(id):
+def delete_user():
+    id = request.form.get('uid', 0, type=int)
     user = User.query.get_or_404(id)
     db.session.delete(user)
-    return redirect(url_for('.index', page=request.args.get('page', 1, type=int)))
+    return jsonify({'ok': True})
