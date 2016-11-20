@@ -1,0 +1,29 @@
+{% extends "admin.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block style %}
+{{ super() }}
+<style>
+#doctorhead{border:0px; margin:0px;}
+</style>
+{% endblock %}
+
+{% block body %}
+{{ super() }}
+{% endblock %}
+
+
+{% block content %}
+
+    <div class="col-md-6" id="doctorcontent">
+        <div class="page-header" id="doctorhead">
+            <h3>添加医生</h3>
+         </div>
+        {{ wtf.quick_form(form) }}
+    </div>
+
+{% endblock %}
+
+{% block script %}
+{{ super() }}
+{% endblock %}

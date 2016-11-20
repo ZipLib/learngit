@@ -1,0 +1,54 @@
+
+{% extends "admin.html" %}
+{% import "_macros.html" as macros %}
+
+{% block style %}
+{{ super() }}
+<style>
+
+</style>
+{% endblock %}
+
+{% block body %}
+{{ super() }}
+{% endblock %}
+
+
+{% block content %}
+
+    <div class="col-md-10">
+        <table class="table table-striped">
+            <caption>医生列表</caption>
+            <thead>
+            <tr>
+                <th>名字</th>
+                <th>工号</th>
+                <th>身份证</th>
+                <th>科室</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for doctor in doctors %}
+            <tr>
+                <td>{{ doctor.name }}</td>
+                <td>{{ doctor.workcard }}</td>
+                <td>{{ doctor.idcard }}</td>
+                <td>{{ doctor.department.name }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        {% if pagination %}
+            <div class="pagination">
+                {{ macros.pagination_widget(pagination, 'main.doctor_list') }}
+            </div>
+        {% endif %}
+    </div>
+
+
+{% endblock %}
+
+{% block script %}
+{{ super() }}
+{% endblock %}

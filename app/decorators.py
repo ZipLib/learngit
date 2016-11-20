@@ -17,3 +17,12 @@ def permission_required(permission):
 
 def admin_required(f):
     return permission_required(Permission.ADMINISTER)(f)
+
+def doctor_required(f):
+    return permission_required(Permission.DOCTOR)(f)
+
+def patient_required(f):
+    return permission_required(Permission.PATIENT)(f)
+
+def registrar_required(f):
+    return permission_required(Permission.REGISTRAR)(f)

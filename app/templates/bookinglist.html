@@ -1,0 +1,53 @@
+{% extends "patient.html" %}
+{% import "_macros.html" as macros %}
+
+{% block style %}
+{{ super() }}
+<style>
+
+</style>
+{% endblock %}
+
+{% block body %}
+{{ super() }}
+{% endblock %}
+
+
+{% block content %}
+
+    <div class="col-md-10">
+        <table class="table table-striped">
+            <caption>挂号列表</caption>
+            <thead>
+            <tr>
+                <th>医生</th>
+                <th>科室</th>
+                <th>日期</th>
+                <th>患者</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for regi in registrations %}
+            <tr>
+                <td>{{ regi.doctor.name }}</td>
+                <td>{{ regi.doctor.department.name }}</td>
+                <td>{{ regi.registration_date }}</td>
+                <td>{{ current_user.name }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        {% if pagination %}
+            <div class="pagination">
+                {{ macros.pagination_widget(pagination, 'main.doctor_list') }}
+            </div>
+        {% endif %}
+    </div>
+
+
+{% endblock %}
+
+{% block script %}
+{{ super() }}
+{% endblock %}

@@ -1,59 +1,8 @@
 {% extends "base.html" %}
-{% import "_macros.html" as macros %}
-
-{% block title %}HIS{% endblock %}
-
-{% block page_content %}
-<div class="page-header">
-    <h1 id="username">
-        Hello, {% if current_user.is_authenticated %}{{ current_user.name }}
-        {% else %}Stranger
-        {% endif %}!
-    </h1>
+{% block title %}home{% endblock %}
+{% block body %}
+<div class="jumbotron">
+    <h1><a href="{{ url_for('main.index') }}">进入网站</a></h1>
+    <p>欢迎来到医院门诊挂号系统</p>
 </div>
-
-{% if current_user.is_administrator() %}
-    <ul class="users">
-        {% for user in users %}
-            {% if not user.name == current_user.name%}
-                <li class="user">
-                    <div class="user-content">
-                        <div class="user-name">{{ user.name }}</div>
-                        <div class="user-email">{{ user.email }}</div>
-                    </div>
-                </li>
-
-                <a class="btn btn-default btn-xs" id="delete" href="javascript:deleteuser({{ user.id }})" >delete</a>
-
-            {% endif %}
-
-        {% endfor %}
-    </ul>
-    {% if pagination %}
-    <div class="pagination">
-        {{ macros.pagination_widget(pagination, '.index') }}
-    </div>
-    {% endif %}
-{% endif %}
-<script src="http://cdn.static.runoob.com/libs/jquery/1.10.2/jquery.min.js">
-</script>
-<script type = "text/javascript">
-
-function deleteuser(uid){
-
-        $.ajax({
-            type: 'POST',
-            url: '{{ url_for('main.delete_user') }}',
-            data: {uid:uid},
-            dataType:'json',
-            success: function(data) {
-
-                window.location.reload();
-            },
-            error: function(xhr, type) {
-                alert("error");
-            }
-        })
-}
-</script>
 {% endblock %}

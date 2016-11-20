@@ -1,7 +1,0 @@
-亲爱的用户 {{ user.username }},
-
-确定账户请点击以下链接：
-
-{{ url_for('auth.change_email', token=token, _external=True) }}
-
-来自：等一个人工作室

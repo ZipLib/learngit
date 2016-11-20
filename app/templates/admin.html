@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block style %}
+<style>
+.div2 li{font-size:18px;}
+.div3{display: none; font-size:16px;}
+.div3 ul{margin:0;padding:0;}
+.div3 li{ height:30px; line-height:30px; cursor:pointer; list-style:none; border-bottom:#ccc 1px dotted; text-align:center;}
+.div3 li.active{font-weight: bold}
+</style>
+{% endblock %}
+
+
+{% block body %}
+<br>
+<br>
+<br>
+<br>
+
+<div class="row">
+	<div class="col-md-2">
+		<ul class="nav nav-pills nav-stacked" id="adminUL">
+            <div class="div2">
+                <li><a href="#">医生管理</a></li>
+            </div>
+            <div class="div3">
+                <ul>
+                    <li class="active"><a href="{{ url_for('main.add_doctor') }}">添加医生</a></li>
+                    <li> <a href="{{ url_for('main.doctor_list') }}">医生列表</a></li>
+                </ul>
+            </div>
+			<div class="div2">
+                <li><a href="#">科室管理</a></li>
+            </div>
+            <div class="div3">
+                <ul>
+                    <li class="active"><a href="{{ url_for('main.add_department') }}">添加科室</a></li>
+                    <li> <a href="{{ url_for('main.department_list') }}">科室列表</a></li>
+                </ul>
+            </div>
+            <div class="div2">
+                <li><a href="#">患者管理</a></li>
+            </div>
+            <div class="div3">
+                <ul>
+                    <li class="active"><a href="{{ url_for('main.add_patient') }}">添加患者</a></li>
+                    <li> <a href="{{ url_for('main.patient_list') }}">患者列表</a></li>
+                </ul>
+            </div>
+		</ul>
+	</div>
+    {% block content %}
+
+    {% endblock %}
+</div>
+    <br>
+{% endblock %}
+
+{% block script %}
+<script>
+ //   $(".div2 > li").click(function(){
+ //       $(this).addClass("active").siblings().removeClass("active")
+ //   })
+
+
+    $(".div2").click(function(){
+        $(this).next("div").slideToggle("slow")
+                .siblings(".div3:visible").slideUp("slow");
+    });
+
+</script>
+{% endblock %}

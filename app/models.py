@@ -6,96 +6,35 @@ from . import db, login_manager
 
 
 class Permission:
-    '''FOLLOW = 0x01
-    COMMENT = 0x02
-    WRITE_ARTICLES = 0x04
-    MODERATE_COMMENTS = 0x08'''
-    SEEDOCTOR = 0x01
+    DOCTOR = 0x01
     REGISTRAR = 0x02
-    SEEPATIENT = 0x04
+    PATIENT = 0x04
     ADMINISTER = 0x80
 
-
-
-class Role(db.Model):
-    __tablename__ = 'roles'
+class Registration(db.Model):
+    __tablename__ = 'registrations'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), unique=True)
-    default = db.Column(db.Boolean, default=False, index=True)
-    permissions = db.Column(db.Integer)
-    users = db.relationship('User', backref='role', lazy='dynamic')
-
-    @staticmethod
-    def insert_roles():
-        roles = {
-            'Patient': (Permission.SEEDOCTOR , True),
-            'Registrar': (Permission.SEEDOCTOR |
-                          Permission.REGISTRAR , False),
-            'Doctor': (Permission.SEEDOCTOR |
-                       Permission.SEEPATIENT, False),
-            'Administrator': (0xff, False)
-        }
-        for r in roles:
-            role = Role.query.filter_by(name=r).first()
-            if role is None:
-                role = Role(name=r)
-            role.permissions = roles[r][0]
-            role.default = roles[r][1]
-            db.session.add(role)
-        db.session.commit()
-
-    def __repr__(self):
-        return '<Role %r>' % self.name
+    patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'))
+    doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id'))
+    registration_date = db.Column(db.Date)
 
 
-class User(UserMixin, db.Model):
-    __tablename__ = 'users'
+class Patient(UserMixin, db.Model):
+    __tablename__ = 'patients'
     id = db.Column(db.Integer, primary_key=True)
-    #email = db.Column(db.String(64), unique=True, index=True)
     medcard = db.Column(db.String(64), unique=True, index=True)
     idcard = db.Column(db.String(64), unique=True, index=True)
+    birthday = db.Column(db.Date)
+    gender = db.Column(db.Integer)
+    phone = db.Column(db.String(64), index=True)
     address = db.Column(db.String(256))
     name = db.Column(db.String(64), index=True)
-    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     password_hash = db.Column(db.String(128))
-    #confirmed = db.Column(db.Boolean, default=False)
-
-    def __init__(self, **kwargs):
-        super(User, self).__init__(**kwargs)
-        if self.role is None:
-            if self.idcard == current_app.config['FLASKY_ADMIN']:
-                self.role = Role.query.filter_by(permissions=0xff).first()
-            if self.role is None:
-                self.role = Role.query.filter_by(default=True).first()
-
-    @staticmethod
-    def generate_fake(count=100):
-        from sqlalchemy.exc import IntegrityError
-        from random import seed, randint
-        import forgery_py
-
-        seed()
-        for i in range(count):
-            u = User(idcard=User.fakeCard(),
-                     medcard=User.fakeCard(8),
-                     address=forgery_py.address.street_address(),
-                     name=forgery_py.internet.user_name(True),
-                     password=forgery_py.lorem_ipsum.word(),
-                     )
-            db.session.add(u)
-            try:
-                db.session.commit()
-            except IntegrityError:
-                db.session.rollback()
-
-    @staticmethod
-    def fakeCard(length=18):
-        import random
-        card=''
-        chars='1234567890'
-        for i in range(length):
-            card += random.choice(chars)
-        return card
+    doctors = db.relationship('Registration',
+                              foreign_keys=[Registration.patient_id],
+                              backref = db.backref('patient', lazy='joined'),
+                              lazy='dynamic',
+                              cascade='all, delete-orphan')
 
     @property
     def password(self):
@@ -108,79 +47,109 @@ class User(UserMixin, db.Model):
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    '''
-    def generate_confirmation_token(self, expiration=3600):
-        s = Serializer(current_app.config['SECRET_KEY'], expiration)
-        return s.dumps({'confirm': self.id})
-
-
-    def confirm(self, token):
-        s = Serializer(current_app.config['SECRET_KEY'])
-        try:
-            data = s.loads(token)
-        except:
-            return False
-        if data.get('confirm') != self.id:
-            return False
-        self.confirmed = True
-        db.session.add(self)
-        return True
-
-    def generate_reset_token(self, expiration=3600):
-        s = Serializer(current_app.config['SECRET_KEY'], expiration)
-        return s.dumps({'reset': self.id})
-    '''
-    #TODO
-    def reset_password(self, token, new_password):
-        s = Serializer(current_app.config['SECRET_KEY'])
-        try:
-            data = s.loads(token)
-        except:
-            return False
-        if data.get('reset') != self.id:
-            return False
-        self.password = new_password
-        db.session.add(self)
-        return True
-
-    '''
-    def generate_email_change_token(self, new_email, expiration=3600):
-        s = Serializer(current_app.config['SECRET_KEY'], expiration)
-        return s.dumps({'change_email': self.id, 'new_email': new_email})
-
-    def change_email(self, token):
-        s = Serializer(current_app.config['SECRET_KEY'])
-        try:
-            data = s.loads(token)
-        except:
-            return False
-        if data.get('change_email') != self.id:
-            return False
-        new_email = data.get('new_email')
-        if new_email is None:
-            return False
-        if self.query.filter_by(email=new_email).first() is not None:
-            return False
-        self.email = new_email
-        db.session.add(self)
-        return True
-    '''
+    def get_id(self):
+        return self.medcard.encode('utf-8')
 
     def can(self, permissions):
-        return self.role is not None and \
-            (self.role.permissions & permissions) == permissions
+        return permissions == Permission.PATIENT
 
     def is_administrator(self):
-        return self.can(Permission.ADMINISTER)
+        return False
 
-    def is_staff(self):
-        return self.can(Permission.SEEPATIENT)or\
-               self.can(Permission.ADMINISTER)or\
-               self.can(Permission.REGISTRAR)
+class Doctor(UserMixin, db.Model):
+    __tablename__ = 'doctors'
+    id = db.Column(db.Integer, primary_key=True)
+    workcard = db.Column(db.String(64), unique=True, index=True)
+    idcard = db.Column(db.String(64), unique=True, index=True)
+    name = db.Column(db.String(64), index=True)
+    password_hash = db.Column(db.String(128))
+    depart_id = db.Column(db.Integer, db.ForeignKey('departments.id'))
+    patients = db.relationship('Registration',
+                               foreign_keys=[Registration.doctor_id],
+                               backref=db.backref('doctor', lazy='joined'),
+                               lazy='dynamic',
+                               cascade='all, delete-orphan')
 
-    def __repr__(self):
-        return '<User %r>' % self.username
+    @property
+    def password(self):
+        raise AttributeError('password is not a readable attribute')
 
+    @password.setter
+    def password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def verify_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def get_id(self):
+        return self.workcard.encode('utf-8')
+
+    def can(self, permissions):
+        return permissions == Permission.DOCTOR
+
+    def is_administrator(self):
+        return False
+
+class Departments(UserMixin, db.Model):
+    __tablename__ = 'departments'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True, index=True)
+    doctors = db.relationship('Doctor', backref='department')
+
+class Registrar(UserMixin, db.Model):
+    __tablename__ = 'registrar'
+    id = db.Column(db.Integer, primary_key=True)
+    workcard = db.Column(db.String(64), unique=True, index=True)
+    idcard = db.Column(db.String(64), unique=True, index=True)
+    name = db.Column(db.String(64), index=True)
+    password_hash = db.Column(db.String(128))
+
+    @property
+    def password(self):
+        raise AttributeError('password is not a readable attribute')
+
+    @password.setter
+    def password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def verify_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def get_id(self):
+        return self.workcard.encode('utf-8')
+
+    def can(self, permissions):
+        return permissions == Permission.REGISTRAR
+
+    def is_administrator(self):
+        return False
+
+class Admin(UserMixin, db.Model):
+    __tablename__ = 'admins'
+    id = db.Column(db.Integer, primary_key=True)
+    account = db.Column(db.String(64), unique=True)
+    name = db.Column(db.String(64))
+    password_hash = db.Column(db.String(128))
+
+    @property
+    def password(self):
+        raise AttributeError('password is not a readable attribute')
+
+    @password.setter
+    def password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def verify_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def get_id(self):
+        return self.account.encode('utf-8')
+
+    def can(self, permissions):
+        return permissions == Permission.ADMINISTER
+
+    def is_administrator(self):
+        return True
 
 class AnonymousUser(AnonymousUserMixin):
     def can(self, permissions):
@@ -191,7 +160,14 @@ class AnonymousUser(AnonymousUserMixin):
 
 login_manager.anonymous_user = AnonymousUser
 
-
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    user_id = user_id.decode('utf-8')
+    if len(user_id) == 8:
+        return Patient.query.filter_by(medcard=user_id).first()
+    elif len(user_id) == 5:
+        return Registrar.query.filter_by(workcard=user_id).first()
+    elif len(user_id) == 4:
+        return Doctor.query.filter_by(workcard=user_id).first()
+    elif len(user_id) == 3:
+        return Admin.query.filter_by(account=user_id).first()

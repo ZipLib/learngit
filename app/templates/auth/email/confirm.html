@@ -1,8 +1,0 @@
-<p>亲爱的用户 {{ user.username }},</p>
-<p>欢迎来到 <b>医院挂号系统</b>!</p>
-<p>确认账户请<a href="{{ url_for('auth.confirm', token=token, _external=True) }}">点击这里</a>.</p>
-<p>你也可以将以下链接输入到你的浏览器地址栏:</p>
-<p>{{ url_for('auth.confirm', token=token, _external=True) }}</p>
-
-<p>来自： <b>等一个人工作室</b></p>
-
